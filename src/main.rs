@@ -124,21 +124,24 @@ impl ILoveTv {
             LinkType::XmlTv => (self.xml_tv.as_ref(), "xmltv.xml"),
         };
         let link = if let Some(l) = link { l } else { return Ok(()) };
-        println!("link {}", link);
 
         let (beginning, file_ext) = file_name.rsplit_once('.').context("Malformed filename")?;
         let tmp_file_name = format!("{}-temp.{}", beginning, file_ext);
         println!("save to: {}", format!("{}/{}", SERVE_DIR, &tmp_file_name));
 
-        self.save_to_file(link, &format!("{}/{}", SERVE_DIR, &tmp_file_name))
-            .await?;
+        let status = self
+            .save_to_file(link, &format!("{}/{}", SERVE_DIR, &tmp_file_name))
+            .await;
+        if let Err(e) = status {
+            eprintln!("Error occured downloading '{}', {:?}", link, e);
+        }
 
         let name = (
             format!("{}/{}", SERVE_DIR, tmp_file_name),
             format!("{}/{}", SERVE_DIR, file_name),
         );
         println!(
-            "No errors on save file, will rename from {} to {}",
+            "No errors on save file, will rename {} to {}",
             &name.0, &name.1
         );
         fs::rename(name.0, name.1).await?;
